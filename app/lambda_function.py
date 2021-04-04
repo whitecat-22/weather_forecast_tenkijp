@@ -4,13 +4,12 @@ lambda_function.py
 # postリクエストをline notify APIに送るためにrequestsのimport
 import os
 import time
-import requests
-import shutil
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
 from datetime import datetime, timezone
 import pytz
+import re
+import requests
+from bs4 import BeautifulSoup
+import json
 
 url = "https://tenki.jp/forecast/3/16/4410/13103/"  # 東京都港区
 
@@ -20,57 +19,12 @@ line_notify_token = os.getenv("LINE_NOTIFY_TOKEN")
 line_notify_api = 'https://notify-api.line.me/api/notify'
 
 
-def move_bin(
-    fname: str, src_dir: str = "/var/task/bin", dest_dir: str = "/tmp/bin"
-) -> None:
-    if not os.path.exists(dest_dir):
-        os.makedirs(dest_dir)
-    dest_file = os.path.join(dest_dir, fname)
-    shutil.copy2(os.path.join(src_dir, fname), dest_file)
-    os.chmod(dest_file, 0o775)
-
-
-def create_driver(
-    options: webdriver.chrome.options.Options,
-) -> webdriver.chrome.webdriver:
-    driver = webdriver.Chrome(
-        executable_path="/tmp/bin/chromedriver", chrome_options=options
-    )
-    return driver
-
-
 def lambda_handler(event, context):
     """
     lambda_handler
     """
     print('event: {}'.format(event))
     print('context: {}'.format(context))
-
-    move_bin("headless-chromium")
-    move_bin("chromedriver")
-
-    #headless_chromium = os.getenv('HEADLESS_CHROMIUM', '')
-    #chromedriver = os.getenv('CHROMEDRIVER', '')
-    # webdriverの設定
-    options = Options()
-    #options.binary_location = headless_chromium
-    options.binary_location = "/tmp/bin/headless-chromium"
-    options.add_argument('--headless')
-    options.add_argument('--no-sandbox')
-    options.add_argument('--single-process')
-    options.add_argument('--disable-dev-shm-usage')
-    options.add_argument("--disable-gpu")
-    options.add_argument("--window-size=1280x1696")
-    options.add_argument("--disable-application-cache")
-    options.add_argument("--disable-infobars")
-    options.add_argument("--hide-scrollbars")
-    options.add_argument("--enable-logging")
-    options.add_argument("--log-level=0")
-    options.add_argument("--ignore-certificate-errors")
-    options.add_argument("--homedir=/tmp")
-
-    driver = create_driver(options)
-    # driver = webdriver.Chrome(executable_path=chromedriver, options=options)
 
     # 現在時刻
     now = datetime.now(tz=timezone.utc)
@@ -79,26 +33,56 @@ def lambda_handler(event, context):
     jst_now = tokyo.normalize(now.astimezone(tokyo))
     content0 = jst_now.strftime("%m月%d日 %H:%M現在")
 
-    content = []
-    driver.get(url)
-    time.sleep(1)
-    content1 = driver.find_element_by_xpath("//section/h2")
-    content2 = driver.find_element_by_css_selector(
-        "#main-column > section > div.forecast-days-wrap.clearfix > section.today-weather > div.weather-wrap.clearfix > div.weather-icon > p")
-    content3 = driver.find_element_by_css_selector(
-        "#main-column > section > div.forecast-days-wrap.clearfix > section.today-weather > div.weather-wrap.clearfix > div.date-value-wrap > dl > dd.high-temp.temp > span.value")
-    content4 = driver.find_element_by_css_selector(
-        "#main-column > section > div.forecast-days-wrap.clearfix > section.today-weather > div.weather-wrap.clearfix > div.date-value-wrap > dl > dd.low-temp.temp > span.value")
+    # bs4でパース
+    r = requests.get(url)
+    html = r.text.encode(r.encoding)
+    soup = BeautifulSoup(html, 'html.parser')
+
+    dict = {}
 
     # lineに通知するメッセージを組み立て
     content_text = []
-    content_text.append("●" + content1.text + '\n' + "今日の天気は" + content2.text +
-                                  "、最高気温は{}℃".format(content3.text) + "、最低気温は{}℃です。".format(content4.text))
 
-    notification_message = content0 + '\n' + '\n\n'.join(content_text)
+    # 予測地点
+    l_pattern = r"(.+)の今日明日の天気"
+    l_src = soup.title.text
+    dict['location'] = re.findall(l_pattern, l_src)[0]
+    content00 = "●" + dict['location'] + "の天気"
+    print(content00)
+    content_text.append(content00)
 
-    driver.close()
-    driver.quit()
+    soup_tdy = soup.select('.today-weather')[0]
+
+    soup_tmr = soup.select('.tomorrow-weather')[0]
+
+
+    # 今日の天気
+    dict["today"] = forecast2dict(soup_tdy)
+
+    info = dict["today"]["forecasts"]
+
+    content1 = "=====" + dict["today"]["date"] + "=====" + "\n" + "天    気： " + info["weather"] + "\n" + "最高気温： " + info["high_temp"] + info["high_temp_diff"] + "\n" + "最低気温： " + info["low_temp"] + info["low_temp_diff"] + "\n" + "降水確率: " + "\n" + "[00-06]： " + info["rain_probability"]['00-06'] + \
+        "\n" + "[06-12]： " + info["rain_probability"]['06-12'] + "\n" + "[12-18]： " + info["rain_probability"]['12-18'] + \
+        "\n" + "[18-24]： " + info["rain_probability"]['18-24'] + \
+        "\n" + "風    向： " + info["wind_wave"]
+
+    print(content1)
+    content_text.append(content1)
+
+    # 明日の天気
+    dict["tomorrow"] = forecast2dict(soup_tmr)
+
+    info = dict["tomorrow"]["forecasts"]
+
+    content2 = "=====" + dict["tomorrow"]["date"] + "=====" + "\n" + "天    気： " + info["weather"] + "\n" + "最高気温： " + info["high_temp"] + info["high_temp_diff"] + "\n" + "最低気温： " + info["low_temp"] + info["low_temp_diff"] + "\n" + "降水確率: " + "\n" + "[00-06]： " + info["rain_probability"]['00-06'] + \
+        "\n" + "[06-12]： " + info["rain_probability"]['06-12'] + "\n" + "[12-18]： " + info["rain_probability"]['12-18'] + \
+        "\n" + "[18-24]： " + info["rain_probability"]['18-24'] + \
+        "\n" + "風    向： " + info["wind_wave"]
+
+    print(content2)
+    content_text.append(content2)
+
+    notification_message = content0 + "\n" + "\n\n".join(content_text)
 
     # ヘッダーの指定
     headers = {'Authorization': f'Bearer {line_notify_token}'}
@@ -111,6 +95,45 @@ def lambda_handler(event, context):
         'status_code': 200
     }
 
+
+def forecast2dict(soup):
+    data = {}
+
+    # 日付処理
+    d_pattern = r"(\d+)月(\d+)日\(([土日月火水木金])+\)"
+    d_src = soup.select('.left-style')
+    date = re.findall(d_pattern, d_src[0].text)[0]
+    data["date"] = "%s/%s(%s)" % (date[0], date[1], date[2])
+    #print("=====" + data["date"] + "=====")
+
+    # ## 取得
+    weather = soup.select('.weather-telop')[0]
+    high_temp = soup.select("[class='high-temp temp']")[0]
+    high_temp_diff = soup.select("[class='high-temp tempdiff']")[0]
+    low_temp = soup.select("[class='low-temp temp']")[0]
+    low_temp_diff = soup.select("[class='low-temp tempdiff']")[0]
+    rain_probability = soup.select('.rain-probability > td')
+    wind_wave = soup.select('.wind-wave > td')[0]
+
+    # ## 格納
+    forecast = {}
+    forecast["weather"] = weather.text.strip()
+    forecast["high_temp"] = high_temp.text.strip()
+    forecast["high_temp_diff"] = high_temp_diff.text.strip()
+    forecast["low_temp"] = low_temp.text.strip()
+    forecast["low_temp_diff"] = low_temp_diff.text.strip()
+    every_6h = {}
+    for i in range(4):
+        time_from = 0+6*i
+        time_to = 6+6*i
+        itr = '{:02}-{:02}'.format(time_from, time_to)
+        every_6h[itr] = rain_probability[i].text.strip()
+    forecast["rain_probability"] = every_6h
+    forecast["wind_wave"] = wind_wave.text.strip()
+
+    data["forecasts"] = forecast
+
+    return data
 
 if __name__ == "__main__":
     print(lambda_handler(event=None, context=None))
