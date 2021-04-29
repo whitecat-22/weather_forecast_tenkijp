@@ -10,13 +10,13 @@ import re
 import requests
 from bs4 import BeautifulSoup
 import json
+from linebot import LineBotApi
+from linebot.models import TextSendMessage
 
 url = "https://tenki.jp/forecast/3/16/4410/13103/"  # 東京都港区
 
 # line notify APIのトークン
-line_notify_token = os.getenv("LINE_NOTIFY_TOKEN")
-# line notify APIのエンドポイントの設定
-line_notify_api = 'https://notify-api.line.me/api/notify'
+line_access_token = os.getenv("LINE_ACCESS_TOKEN")
 
 
 def lambda_handler(event, context):
@@ -84,12 +84,12 @@ def lambda_handler(event, context):
 
     notification_message = content0 + "\n" + "\n\n".join(content_text)
 
-    # ヘッダーの指定
-    headers = {'Authorization': f'Bearer {line_notify_token}'}
     # 送信するデータの指定
-    data = {'message': f'{notification_message}'}
-    # line notify apiにpostリクエストを送る
-    requests.post(line_notify_api, headers=headers, data=data)
+    # headers = {'Authorization': f'Bearer {line_access_token}'}
+    # data = {'message': f'{notification_message}'}
+
+    line_bot_api = LineBotApi(line_access_token)
+    line_bot_api.broadcast(TextSendMessage(text=notification_message))
 
     return {
         'status_code': 200
