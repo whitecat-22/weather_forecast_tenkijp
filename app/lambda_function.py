@@ -13,7 +13,7 @@ import json
 from linebot import LineBotApi
 from linebot.models import TextSendMessage
 
-url = "https://tenki.jp/forecast/3/16/4410/13103/"  # 東京都港区
+url = os.getenv("URL")
 
 # line notify APIのトークン
 line_access_token = os.getenv("LINE_ACCESS_TOKEN")
