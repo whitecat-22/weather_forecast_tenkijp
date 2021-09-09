@@ -8,6 +8,16 @@
 
 　
 
+### 使用技術
+- Python 3.8
+- AWS
+  - Lambda
+  - EventBridge
+  - SNS
+  - CloudTrailLogs
+
+　
+
 ### 執筆記事：AWS Lambdaで天気予報を毎朝LINEへ通知してみた【Python】
 
 <a href="https://qiita.com/_whitecat_22/items/479659e59af0a3bc731c">
