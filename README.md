@@ -2,7 +2,7 @@
 
 ### 指定した都市につき、tenki.jpの天気予報をLINE Messaging APIによりLine botとして通知する
 
-- AWS Lambda で定期実行するように対応　（JST:6時10分に実行）  
+- AWS Lambda で定期実行するように対応　（毎日 JST:6時10分に実行）  
 - トリガーは、EventBridge (CloudWatch Events)で設定  
 - ログは、Amazon SNS により、Cloud Trail Logs へ送信  
 
