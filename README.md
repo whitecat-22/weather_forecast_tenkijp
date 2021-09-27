@@ -7,7 +7,8 @@
 - ログは、Amazon SNS により、Cloud Trail Logs へ送信  
 
 ※※本来はスクレイピングではなく、APIが存在すればAPIを利用すべきです※※
-　
+
+
 
 ### 使用技術：
 - Python 3.8
