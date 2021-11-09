@@ -1,6 +1,6 @@
 # weather_forecast_tenkijp
 
-### 指定した都市につき、tenki.jpの天気予報をLine botとして通知する
+### 指定した都市につき、[tenki.jp](https://tenki.jp/)の天気予報をLine botとして通知する
 
 
 ### 処理内容：
