@@ -3,7 +3,7 @@
 ### 指定した都市につき、[tenki.jp](https://tenki.jp/)の天気予報をLine botとして通知する
 
 
-### 処理内容：
+### ◆処理内容：
 - AWS Lambda で定期実行するように対応　（毎日 JST:6時10分に実行、6時00分時点の予報を通知）  
 - トリガーは、EventBridge (CloudWatch Events)で設定  
 - LINE Messaging APIにより、LINEへ通知  
@@ -13,7 +13,7 @@
 
 　
 
-### 使用技術：
+### ◆使用技術：
 - Python 3.8
 - AWS
   - Lambda
@@ -23,7 +23,7 @@
 
 　
 
-### 執筆記事：[AWS Lambdaで天気予報を毎朝LINEへ通知してみた【Python】](https://qiita.com/_whitecat_22/items/479659e59af0a3bc731c)
+### ◆執筆記事：[AWS Lambdaで天気予報を毎朝LINEへ通知してみた【Python】](https://qiita.com/_whitecat_22/items/479659e59af0a3bc731c)
 
 <a href="https://qiita.com/_whitecat_22/items/479659e59af0a3bc731c">
  <img src="https://github.com/whitecat-22/weather_forecast_tenkijp/blob/main/qiita.png">
