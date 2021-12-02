@@ -9,7 +9,7 @@
 - LINE Messaging APIにより、LINEへ通知  
 - ログは、Amazon SNS により、Cloud Trail Logs へ送信  
 
-※※本来はスクレイピングではなく、APIが存在すればAPIを利用すべきです※※
+**※※本来はスクレイピングではなく、APIが存在すればAPIを利用すべきです※※**
 
 　
 
