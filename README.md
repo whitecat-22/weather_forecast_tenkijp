@@ -6,7 +6,7 @@
 ### ◆処理内容：
 - AWS Lambda で定期実行するように対応　（毎日 JST:6時10分に実行、6時00分時点の予報を通知）  
 - トリガーは、EventBridge (CloudWatch Events)で設定  
-- LINE Messaging APIにより、LINEへ通知  
+- [LINE Messaging API](https://developers.line.biz/ja/services/messaging-api/)により、LINEへ通知  
 - ログは、Amazon SNS により、Cloud Trail Logs へ送信  
 
 **※※本来はスクレイピングではなく、APIが存在すればAPIを利用すべきです※※**
